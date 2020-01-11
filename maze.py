@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List, NamedTuple, Optional
 import random
 
-from search import Node, dfs, nodes_in_path
+from search import Node, dfs, bfs, nodes_in_path
 
 
 class Cell(str, Enum):
@@ -19,8 +19,8 @@ class Location(NamedTuple):
 
 
 class Maze:
-    def __init__(self, rows: int = 40, columns: int = 200, blockade_probability: float = 0.3,
-                 start: Location = Location(0, 0), end: Location = Location(39, 199)):
+    def __init__(self, rows: int = 25, columns: int = 250, blockade_probability: float = 0.3,
+                 start: Location = Location(0, 0), end: Location = Location(24, 249)):
         self._rows: int = rows
         self._columns: int = columns
         self.start: Location = start
@@ -71,8 +71,9 @@ class Maze:
 
 
 if __name__ == '__main__':
-    # Solve the Maze with DFS
     m: Maze = Maze()
+
+    # Solve the Maze with DFS
     dfs_solution: Optional[Node[Location]] = dfs(m.start, m.is_end, m.next_steps)
     if dfs_solution is None:
         print(m)
@@ -81,5 +82,16 @@ if __name__ == '__main__':
         dfs_path: List[Location] = nodes_in_path(dfs_solution)
         m.print_path(dfs_path)
         print(m)
-        print(f'Maze can be solved with depth-first search in {len(dfs_path)} steps.')
+        print(f'Maze can be solved with depth-first search in {len(dfs_path)} steps.\n\n')
         m.delete_path(dfs_path)
+
+    # Solve the Maze with BFS
+    bfs_solution: Optional[Node[Location]] = bfs(m.start, m.is_end, m.next_steps)
+    if bfs_solution is None:
+        print('No solution found with breadth-first search.')
+    else:
+        bfs_path: List[Location] = nodes_in_path(bfs_solution)
+        m.print_path(bfs_path)
+        print(m)
+        print(f'Maze can be solved with breadth-first search in {len(bfs_path)} steps.\n\n')
+        m.delete_path(bfs_path)
