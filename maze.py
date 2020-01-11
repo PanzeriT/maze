@@ -1,11 +1,13 @@
 from enum import Enum
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Optional
 import random
+
+from search import Node, dfs, nodes_in_path
 
 
 class Cell(str, Enum):
     EMPTY = ' '
-    BLOCKED = '\u25a0'
+    BLOCKED = '\u2588'
     START = 'S'
     END = 'E'
     PATH = '*'
@@ -17,8 +19,8 @@ class Location(NamedTuple):
 
 
 class Maze:
-    def __init__(self, rows: int = 20, columns: int = 100, blockade_probability: float = 0.3,
-                 start: Location = Location(0, 0), end: Location = Location(19, 99)):
+    def __init__(self, rows: int = 40, columns: int = 200, blockade_probability: float = 0.3,
+                 start: Location = Location(0, 0), end: Location = Location(39, 199)):
         self._rows: int = rows
         self._columns: int = columns
         self.start: Location = start
@@ -28,19 +30,56 @@ class Maze:
         self._grid[start.row][start.column] = Cell.START
         self._grid[end.row][end.column] = Cell.END
 
-    def add_blocks(self, rows: int, columns: int, blockade_probability: float):
-        for row in range(rows):
-            for column in range(columns):
-                if random.uniform(0, 1.0) < blockade_probability:
-                    self._grid[row][column] = Cell.BLOCKED
-
     def __str__(self):
         output = ''
         for row in self._grid:
             output += ''.join([c.value for c in row]) + '\n'
         return output
 
+    def add_blocks(self, rows: int, columns: int, blockade_probability: float):
+        for row in range(rows):
+            for column in range(columns):
+                if random.uniform(0, 1.0) < blockade_probability:
+                    self._grid[row][column] = Cell.BLOCKED
+
+    def is_end(self, location: Location) -> bool:
+        return location == self.end
+
+    def next_steps(self, location: Location) -> List[Location]:
+        locations: List[Location] = []
+        if location.row + 1 < self._rows and self._grid[location.row + 1][location.column] != Cell.BLOCKED:
+            locations.append(Location(location.row + 1, location.column))
+        if location.row - 1 >= 0 and self._grid[location.row - 1][location.column] != Cell.BLOCKED:
+            locations.append(Location(location.row - 1, location.column))
+        if location.column + 1 < self._columns and self._grid[location.row][location.column + 1] != Cell.BLOCKED:
+            locations.append(Location(location.row, location.column + 1))
+        if location.column - 1 >= 0 and self._grid[location.row][location.column - 1] != Cell.BLOCKED:
+            locations.append(Location(location.row, location.column - 1))
+        return locations
+
+    def print_path(self, path: List[Location]) -> None:
+        for location in path:
+            self._grid[location.row][location.column] = Cell.PATH
+        self._grid[self.start.row][self.start.column] = Cell.START
+        self._grid[self.end.row][self.end.column] = Cell.END
+
+    def delete_path(self, path: List[Location]) -> None:
+        for location in path:
+            self._grid[location.row][location.column] = Cell.EMPTY
+        self._grid[self.start.row][self.start.column] = Cell.START
+        self._grid[self.end.row][self.end.column] = Cell.END
+
 
 if __name__ == '__main__':
-    m = Maze()
-    print(m)
+    # Solve the Maze with DFS
+    m: Maze = Maze()
+    dfs_solution: Optional[Node[Location]] = dfs(m.start, m.is_end, m.next_steps)
+    if dfs_solution is None:
+        print(m)
+        print('No solution found with depth-first search.')
+    else:
+        dfs_path: List[Location] = nodes_in_path(dfs_solution)
+        m.print_path(dfs_path)
+        print(m)
+        print(f'Maze can be solved with depth-first search in {len(dfs_path)} steps.')
+        m.delete_path(dfs_path)
